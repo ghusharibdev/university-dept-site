@@ -17,31 +17,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check HTML files
+      - name: Check HTML and CSS
         run: |
-          echo "Checking HTML files in ./html/"
-          if [ -d "./html" ]; then
-            for file in ./html/*.html; do
-              [ -e "$file" ] || continue
-              echo "✓ Validating $file"
-            done
-          else
-            echo "HTML directory not found!"
-            exit 1
-          fi
-
-      - name: Check CSS files
-        run: |
-          echo "Checking CSS files in ./css/"
-          if [ -d "./css" ]; then
-            for file in ./css/*.css; do
-              [ -e "$file" ] || continue
-              echo "✓ Validating $file"
-            done
-          else
-            echo "CSS directory not found!"
-            exit 1
-          fi
+          echo "Verifying project structure..."
+          [ -d "./html" ] && [ -d "./css" ] || (echo "Error: Required folders missing"; exit 1)
 
   # -------------------- CI: Build & Push --------------------
   build:
@@ -53,7 +32,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set Image Name to Lowercase
-        # This ensures the image name is lowercase to comply with Docker standards
+        # Fixes potential Docker build errors from uppercase repo names
         run: echo "IMAGE_NAME_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
       - name: Log in to GitHub Container Registry
@@ -79,12 +58,10 @@ jobs:
       name: development
     steps:
       - name: Trigger Render Deploy - Development
-        id: deploy
         run: |
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_DEV_SERVICE_ID }}/deploys \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json"
-          echo "service_url=https://your-app-dev.onrender.com" >> $GITHUB_OUTPUT
 
   # -------------------- CD: Deploy to Staging --------------------
   deploy-staging:
@@ -95,12 +72,10 @@ jobs:
       name: staging
     steps:
       - name: Trigger Render Deploy - Staging
-        id: deploy
         run: |
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_STAGING_SERVICE_ID }}/deploys \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json"
-          echo "service_url=https://your-app-staging.onrender.com" >> $GITHUB_OUTPUT
 
   # -------------------- CD: Deploy to Production --------------------
   deploy-production:
@@ -111,9 +86,7 @@ jobs:
       name: production
     steps:
       - name: Trigger Render Deploy - Production
-        id: deploy
         run: |
           curl -X POST https://api.render.com/v1/services/${{ secrets.RENDER_PROD_SERVICE_ID }}/deploys \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
             -H "Content-Type: application/json"
-          echo "service_url=https://your-app-prod.onrender.com" >> $GITHUB_OUTPUT
